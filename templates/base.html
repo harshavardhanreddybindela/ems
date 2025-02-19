@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Django App</title>
+</head>
+<body>
+    <nav>
+        <a href="{% url 'home' %}">Home</a> |
+        <a href="{% url 'about' %}">About Us</a> |
+        {% if user.is_authenticated %}
+            <a href="{% url 'profile' %}">Profile</a> |
+            <a href="{% url 'logout' %}">Logout</a> |
+            <span>Welcome, {{ user.username }}</span>
+        {% else %}
+            <a href="{% url 'login' %}">Login</a> |
+            <a href="{% url 'signup' %}">Sign Up</a>
+        {% endif %}
+    </nav>
+    <hr>
+    {% block content %}{% endblock %}
+</body>
+</html>
+

@@ -1,0 +1,9 @@
+<!-- templates/users/home.html -->
+{% extends "users/base.html" %}
+
+{% block content %}
+<div class="container">
+    <h1>Welcome, {{ user.email }}!</h1>
+    <p>Hello, you have successfully logged in!</p>
+</div>
+{% endblock %}
