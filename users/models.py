@@ -1,5 +1,3 @@
-# models.py
-
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 
@@ -24,7 +22,6 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(unique=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
-    events = models.ManyToManyField('Event', related_name='participants', blank=True)  # Many-to-Many relation with Event
 
     objects = CustomUserManager()
 
@@ -43,3 +40,11 @@ class Event(models.Model):
 
     def __str__(self):
         return self.name
+
+class Registration(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)  # Fixed user reference
+    event = models.ForeignKey(Event, on_delete=models.CASCADE)
+    registered_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'event')  # Prevent duplicate registrations

@@ -1,9 +1,30 @@
-<!-- templates/users/home.html -->
 {% extends "users/base.html" %}
 
 {% block content %}
 <div class="container">
     <h1>Welcome, {{ user.email }}!</h1>
     <p>Hello, you have successfully logged in!</p>
+
+    <h2>All Available Events</h2>
+    {% if events %}
+        
+        <div class="list-group">
+            {% for event in events %}
+                <div class="list-group-item">
+                    <h4>{{ event.name }}</h4>
+                    <p><strong>Date:</strong> {{ event.datetime }}</p>
+                    <p><strong>Description:</strong> {{ event.description }}</p>
+                    <p><strong>Available Slots:</strong> {{ event.participant_limit }}</p>
+                    
+                    {% if event.poster %}
+                        <img src="{{ event.poster.url }}" alt="{{ event.name }} poster" width="200"><br><br>
+                    {% endif %}
+
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p>No events available.</p>
+    {% endif %}
 </div>
 {% endblock %}

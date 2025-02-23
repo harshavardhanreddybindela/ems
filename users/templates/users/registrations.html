@@ -1,0 +1,42 @@
+{% extends "users/base.html" %}
+
+{% block content %}
+<div class="container">
+    <h1>Welcome, {{ user.email }}!</h1>
+    <p>Below is your event registration information.</p>
+
+    <h2>Your Registered Events</h2>
+    {% if registrations %}
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Event Name</th>
+                    <th>Date</th>
+                    <th>Description</th>
+                    <th>Participants Limit</th>
+                    <th>Poster</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for registration in registrations %}
+                    <tr>
+                        <td>{{ registration.event.name }}</td>
+                        <td>{{ registration.event.datetime }}</td>
+                        <td>{{ registration.event.description }}</td>
+                        <td>{{ registration.event.participant_limit }}</td>
+                        <td>
+                            {% if registration.event.poster %}
+                                <img src="{{ registration.event.poster.url }}" alt="{{ registration.event.name }} poster" width="100">
+                            {% else %}
+                                No Poster
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>You have not registered for any events yet.</p>
+    {% endif %}
+</div>
+{% endblock %}

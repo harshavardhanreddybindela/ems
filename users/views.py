@@ -1,3 +1,4 @@
+from asyncio import events
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
@@ -8,7 +9,7 @@ from django.shortcuts import get_object_or_404
 from django.http import FileResponse
 
 from django.http import HttpResponse
-from .models import Event
+from .models import Event, Registration
 from .forms import EventForm
 from django.core.files.base import ContentFile
 import base64
@@ -55,9 +56,9 @@ def login_view(request):
 
     return render(request, "users/login.html")
 
-@login_required
-def home_view(request):
-    return render(request, "users/home.html")
+# @login_required
+# # def home_view(request):
+# #     return render(request, "users/home.html")
 
 @login_required
 def events_view(request):
@@ -88,10 +89,7 @@ def create_event(request):
         form = EventForm()
     return render(request, 'create_event.html', {'form': form})
 
-@login_required
-def event_list(request):
-    events = Event.objects.all()
-    return render(request, 'events.html', {'events': events})
+
 
 
 def get_event_poster(request, event_id):
@@ -107,10 +105,16 @@ def get_event_poster(request, event_id):
 from .models import Event
 from .forms import EventForm
 
+@login_required
 def event_list(request):
+    print("entering into event list")
     events = Event.objects.all()
+    for event in events:
+        print(f"Event ID: {event.event_id}, Event Name: {event.name}")
+
     return render(request, 'users/events.html', {'events': events})
 
+@login_required
 def add_event(request):
     if request.method == 'POST':
         # Extracting form data
@@ -129,6 +133,51 @@ def add_event(request):
             poster=poster,
         )
         event.save()  # Save the event to the database
-        return render(request, 'users/events.html', {'events': events})  # Redirect to event list page after adding
+        return redirect('/events/')  # Redirect to event list page after adding
     
     return render(request, 'users/add_event.html')
+
+
+@login_required
+def delete_event(request, event_id):
+    # Get the event object or 404 if not found
+    event = get_object_or_404(Event, event_id = event_id)
+    # Delete the event
+    event.delete()
+    # Redirect to the event list page
+    return redirect('events')
+
+@login_required
+def register_for_event(request, event_id):
+    event = get_object_or_404(Event, event_id = event_id)
+
+    # Check if the event has available slots
+    if event.participant_limit and event.participant_limit <= 0:
+        messages.warning(request, "No spots available for this event.")
+        return redirect("events")
+
+    if Registration.objects.filter(user=request.user, event=event).exists():
+        messages.warning(request, "You are already registered for this event.")
+    else:
+        # Create a registration
+        Registration.objects.create(user=request.user, event=event)
+
+        # Decrease participant limit if available
+        if event.participant_limit:
+            event.participant_limit -= 1
+            event.save()
+
+        messages.success(request, "Successfully registered for the event!")
+
+    return redirect("events")  # Redirect to the events page
+
+@login_required
+def event_registrations(request):
+    registrations = Registration.objects.filter(user=request.user)
+    return render(request, 'users/registrations.html', {'registrations': registrations})
+
+
+@login_required
+def home(request):
+    events = Event.objects.all()  # Fetch all events from the database
+    return render(request, 'users/home.html', {'events': events})
