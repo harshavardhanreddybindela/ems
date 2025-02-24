@@ -1,30 +1,37 @@
-{% extends "users/base.html" %}
-
-{% block content %}
+{% extends "users/base.html" %} {% block content %}
 <div class="container">
-    <h1>Welcome, {{ user.email }}!</h1>
-    <p>Hello, you have successfully logged in!</p>
+  <h1>Welcome, {{ user.email }}!</h1>
+  <p>Hello, you have successfully logged in!</p>
 
-    <h2>All Available Events</h2>
-    {% if events %}
-        
-        <div class="list-group">
-            {% for event in events %}
-                <div class="list-group-item">
-                    <h4>{{ event.name }}</h4>
-                    <p><strong>Date:</strong> {{ event.datetime }}</p>
-                    <p><strong>Description:</strong> {{ event.description }}</p>
-                    <p><strong>Available Slots:</strong> {{ event.participant_limit }}</p>
-                    
-                    {% if event.poster %}
-                        <img src="{{ event.poster.url }}" alt="{{ event.name }} poster" width="200"><br><br>
-                    {% endif %}
+  <h2>All Available Events</h2>
+  {% if events %}
+  <div class="list-group">
+    {% for event in events %}
+    <div class="list-group-item">
+      <h4>{{ event.name }}</h4>
+      <p><strong>Date:</strong> {{ event.datetime }}</p>
+      <p><strong>Description:</strong> {{ event.description }}</p>
+      <p><strong>Available Slots:</strong> {{ event.participant_limit }}</p>
 
-                </div>
-            {% endfor %}
-        </div>
-    {% else %}
-        <p>No events available.</p>
-    {% endif %}
+      {% if event.poster %}
+      <img
+        src="{{ event.poster.url }}"
+        alt="{{ event.name }} poster"
+        width="200"
+      /><br /><br />
+      {% endif %}
+
+      <form method="POST" action="{% url 'register_event' event.event_id %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-primary">Register</button>
+      </form>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p>No events available.</p>
+  {% endif %}
+
+  <hr />
 </div>
 {% endblock %}

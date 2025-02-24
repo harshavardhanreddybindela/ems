@@ -147,37 +147,63 @@ def delete_event(request, event_id):
     # Redirect to the event list page
     return redirect('events')
 
-@login_required
-def register_for_event(request, event_id):
-    event = get_object_or_404(Event, event_id = event_id)
+# @login_required
+# def register_for_event(request, event_id):
+#     event = get_object_or_404(Event, event_id = event_id)
 
-    # Check if the event has available slots
+#     # Check if the event has available slots
+#     if event.participant_limit and event.participant_limit <= 0:
+#         messages.warning(request, "No spots available for this event.")
+#         return redirect("events")
+
+#     if Registration.objects.filter(user=request.user, event=event).exists():
+#         messages.warning(request, "You are already registered for this event.")
+#     else:
+#         # Create a registration
+#         Registration.objects.create(user=request.user, event=event)
+
+#         # Decrease participant limit if available
+#         if event.participant_limit:
+#             event.participant_limit -= 1
+#             event.save()
+
+#         messages.success(request, "Successfully registered for the event!")
+
+#     return redirect("events")  # Redirect to the events page
+
+@login_required
+def register_event(request, event_id):
+    event = get_object_or_404(Event, event_id=event_id)
+
+    # Check participant limit
     if event.participant_limit and event.participant_limit <= 0:
         messages.warning(request, "No spots available for this event.")
         return redirect("events")
 
-    if Registration.objects.filter(user=request.user, event=event).exists():
-        messages.warning(request, "You are already registered for this event.")
-    else:
-        # Create a registration
-        Registration.objects.create(user=request.user, event=event)
-
-        # Decrease participant limit if available
+    registration, created = Registration.objects.get_or_create(user=request.user, event=event)
+    
+    if created:
         if event.participant_limit:
             event.participant_limit -= 1
             event.save()
-
         messages.success(request, "Successfully registered for the event!")
+    else:
+        messages.warning(request, "You are already registered for this event.")
 
-    return redirect("events")  # Redirect to the events page
+    return redirect("events")
 
 @login_required
 def event_registrations(request):
     registrations = Registration.objects.filter(user=request.user)
     return render(request, 'users/registrations.html', {'registrations': registrations})
 
-
 @login_required
 def home(request):
     events = Event.objects.all()  # Fetch all events from the database
     return render(request, 'users/home.html', {'events': events})
+
+@login_required
+def unregister_event(request, event_id):
+    registration = get_object_or_404(Registration, event_id=event_id, user=request.user)
+    registration.delete()
+    return redirect('event_registrations')
