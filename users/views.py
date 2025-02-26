@@ -1,80 +1,111 @@
-from asyncio import events
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
-from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import get_object_or_404
-from django.http import FileResponse
+from django.contrib import messages
+from django.http import FileResponse, HttpResponse
 
-from django.http import HttpResponse
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.response import Response
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework import status
+
 from .models import Event, Registration
 from .forms import EventForm
-from django.core.files.base import ContentFile
-import base64
 
 User = get_user_model()
 
-def signup_view(request):
-    if request.method == "POST":
-        email = request.POST.get("email")
-        password = request.POST.get("password")
-        confirm_password = request.POST.get("confirm_password")
 
-        if password != confirm_password:
-            messages.error(request, "Passwords do not match!")
-            return redirect("signup")
+### JWT AUTHENTICATION VIEWS ###
+@api_view(['POST'])
+def jwt_signup(request):
+    """
+    Register a new user and return JWT tokens
+    """
+    email = request.data.get('email')
+    password = request.data.get('password')
+    confirm_password = request.data.get('confirm_password')
 
-        if User.objects.filter(email=email).exists():
-            messages.error(request, "User with this email already exists!")
-            return redirect("signup")
+    if password != confirm_password:
+        return Response({'error': 'Passwords do not match!'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Creating user
-        user = User(email=email, password=make_password(password))
-        user.save()
+    if User.objects.filter(email=email).exists():
+        return Response({'error': 'User with this email already exists!'}, status=status.HTTP_400_BAD_REQUEST)
 
-        messages.success(request, "Signup successful! Please log in.")
-        return redirect("login")
+    # Create user
+    user = User.objects.create(email=email, password=make_password(password))
+    user.save()
 
-    return render(request, "users/signup.html")
+    # Generate JWT token
+    refresh = RefreshToken.for_user(user)
+    print("-----Refresh from Signup:----------", refresh)
+    return Response({
+        'refresh': str(refresh),
+        'access': str(refresh.access_token),
+    })
 
+
+@api_view(['POST'])  # Only accept POST requests
+def jwt_login(request):
+    email = request.data.get('email')
+    password = request.data.get('password')
+
+    user = authenticate(email=email, password=password)
+
+    if user:
+        refresh = RefreshToken.for_user(user)
+        return Response({
+            'refresh': str(refresh),
+            'access': str(refresh.access_token),
+        })
+    else:
+        return Response({'error': 'Invalid email or password'}, status=status.HTTP_401_UNAUTHORIZED)
 
 def login_view(request):
-    if request.method == "POST":
-        email = request.POST.get("email")
-        password = request.POST.get("password")
-
-        user = authenticate(request, email=email, password=password)
-
-        if user is not None:
-            login(request, user)
-            return redirect("home")  # Redirect to home after login
-        else:
-            messages.error(request, "Invalid email or password.")
-            return redirect("login")
-
     return render(request, "users/login.html")
 
-# @login_required
-# # def home_view(request):
-# #     return render(request, "users/home.html")
+@api_view(['POST'])
+def jwt_logout(request):
+    """
+    Logout user by blacklisting refresh token
+    """
+    try:
+        refresh_token = request.data["refresh"]
+        token = RefreshToken(refresh_token)
+        token.blacklist()
+        return Response({"message": "Logged out successfully"}, status=status.HTTP_205_RESET_CONTENT)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def protected_view(request):
+    """
+    Example of a protected view that requires authentication
+    """
+    return Response({"message": f"Hello {request.user.email}, you are authenticated!"})
+
+
+### EVENT MANAGEMENT VIEWS ###
 @login_required
 def events_view(request):
     return render(request, "users/events.html")
 
+
 @login_required
 def profile_view(request):
-    return render(request, "users/profile.html")
+    registered_events = request.session.get('registered_events', [])
+    events = Event.objects.filter(event_id__in=registered_events)
+    return render(request, "users/profile.html", {"events": events})
+
 
 @login_required
 def about_view(request):
     return render(request, "users/about.html")
 
-def logout_view(request):
-    logout(request)
-    return redirect("login")
 
 @login_required
 def create_event(request):
@@ -82,14 +113,12 @@ def create_event(request):
         form = EventForm(request.POST, request.FILES)
         if form.is_valid():
             event = form.save(commit=False)
-            event.created_by = request.user  # Associate event with the logged-in user
+            event.created_by = request.user
             event.save()
-            return redirect('event_list')  # Redirect to events page
+            return redirect('event_list')
     else:
         form = EventForm()
     return render(request, 'create_event.html', {'form': form})
-
-
 
 
 def get_event_poster(request, event_id):
@@ -101,30 +130,21 @@ def get_event_poster(request, event_id):
         return HttpResponseNotFound("No poster available.")
 
 
-
-from .models import Event
-from .forms import EventForm
-
 @login_required
 def event_list(request):
-    print("entering into event list")
     events = Event.objects.all()
-    for event in events:
-        print(f"Event ID: {event.event_id}, Event Name: {event.name}")
-
     return render(request, 'users/events.html', {'events': events})
+
 
 @login_required
 def add_event(request):
     if request.method == 'POST':
-        # Extracting form data
         name = request.POST.get('name')
         description = request.POST.get('description')
-        event_datetime = request.POST.get('datetime')  # Event date and time
+        event_datetime = request.POST.get('datetime')
         participant_limit = request.POST.get('participant_limit')
-        poster = request.FILES.get('poster')  # Handling file uploads
-        
-        # Create a new Event object
+        poster = request.FILES.get('poster')
+
         event = Event(
             name=name,
             description=description,
@@ -132,75 +152,57 @@ def add_event(request):
             participant_limit=participant_limit,
             poster=poster,
         )
-        event.save()  # Save the event to the database
-        return redirect('/events/')  # Redirect to event list page after adding
-    
+        event.save()
+        return redirect('/events/')
+
     return render(request, 'users/add_event.html')
 
 
 @login_required
 def delete_event(request, event_id):
-    # Get the event object or 404 if not found
-    event = get_object_or_404(Event, event_id = event_id)
-    # Delete the event
+    event = get_object_or_404(Event, event_id=event_id)
     event.delete()
-    # Redirect to the event list page
     return redirect('events')
 
-# @login_required
-# def register_for_event(request, event_id):
-#     event = get_object_or_404(Event, event_id = event_id)
-
-#     # Check if the event has available slots
-#     if event.participant_limit and event.participant_limit <= 0:
-#         messages.warning(request, "No spots available for this event.")
-#         return redirect("events")
-
-#     if Registration.objects.filter(user=request.user, event=event).exists():
-#         messages.warning(request, "You are already registered for this event.")
-#     else:
-#         # Create a registration
-#         Registration.objects.create(user=request.user, event=event)
-
-#         # Decrease participant limit if available
-#         if event.participant_limit:
-#             event.participant_limit -= 1
-#             event.save()
-
-#         messages.success(request, "Successfully registered for the event!")
-
-#     return redirect("events")  # Redirect to the events page
 
 @login_required
 def register_event(request, event_id):
     event = get_object_or_404(Event, event_id=event_id)
 
-    # Check participant limit
     if event.participant_limit and event.participant_limit <= 0:
         messages.warning(request, "No spots available for this event.")
         return redirect("events")
 
     registration, created = Registration.objects.get_or_create(user=request.user, event=event)
-    
+
     if created:
         if event.participant_limit:
             event.participant_limit -= 1
             event.save()
         messages.success(request, "Successfully registered for the event!")
+
+        if 'registered_events' not in request.session:
+            request.session['registered_events'] = []
+        
+        request.session['registered_events'].append(event_id)
+        request.session.modified = True
+
     else:
         messages.warning(request, "You are already registered for this event.")
 
     return redirect("events")
+
 
 @login_required
 def event_registrations(request):
     registrations = Registration.objects.filter(user=request.user)
     return render(request, 'users/registrations.html', {'registrations': registrations})
 
-@login_required
+
 def home(request):
-    events = Event.objects.all()  # Fetch all events from the database
+    events = Event.objects.all()
     return render(request, 'users/home.html', {'events': events})
+
 
 @login_required
 def unregister_event(request, event_id):
