@@ -31,24 +31,8 @@ ALLOWED_HOSTS = []
 
 # Application definition
 
-INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'rest_framework',
-    'rest_framework_simplejwt', 
-    'users',
-    
-]
 
-REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
-    ),
-}
+
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -57,6 +41,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'corsheaders',
     'users',
     'rest_framework',  # Django REST Framework
     'rest_framework_simplejwt',  # JWT Authentication
@@ -66,7 +51,7 @@ INSTALLED_APPS = [
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
-    ),
+        ),
 }
 
 # JWT Settings (optional configurations)
@@ -92,11 +77,18 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+]
+
+
+
 
 ROOT_URLCONF = 'EventManagementSystem.urls'
 
@@ -116,12 +108,12 @@ TEMPLATES = [
     },
 ]
 
-SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+# SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 
-SESSION_COOKIE_NAME = 'myapp_sessionid'
-SESSION_COOKIE_AGE = 3600
-SESSION_EXPIRE_AT_BROWSER_CLOSE = False  
-SESSION_SAVE_EVERY_REQUEST = True
+# SESSION_COOKIE_NAME = 'myapp_sessionid'
+# SESSION_COOKIE_AGE = 3600
+# SESSION_EXPIRE_AT_BROWSER_CLOSE = False  
+# SESSION_SAVE_EVERY_REQUEST = True
 
 WSGI_APPLICATION = 'EventManagementSystem.wsgi.application'
 
