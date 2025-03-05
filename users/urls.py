@@ -17,13 +17,13 @@ urlpatterns = [
     #path("api/about/", views.about_view, name="about"),
 
     # Event management routes
-    # path("api/events/", views.event_list, name="events"),
-    # path("api/events/<int:event_id>/", views.event_detail, name="event_detail"),
-    # path("api/events/add/", views.add_event, name="add_event"),
-    # path("api/events/delete/<int:event_id>/", views.delete_event, name="delete_event"),
-    # path("api/register-event/<int:event_id>/", views.register_event, name="register_event"),
-    # path("api/unregister/<int:event_id>/", views.unregister_event, name="unregister_event"),
-    # path("api/registrations/", views.event_registrations, name="event_registrations"),
+    path("api/events/", views.event_list, name="events"),
+    path("api/events/<int:event_id>/", views.event_detail, name="event_detail"),
+    path("api/events/add/", views.add_event, name="add_event"),
+    path("api/events/delete/<int:event_id>/", views.delete_event, name="delete_event"),
+    path("api/register-event/<int:event_id>/", views.register_event, name="register_event"),
+    path("api/unregister/<int:event_id>/", views.unregister_event, name="unregister_event"),
+    path("api/registrations/", views.event_registrations, name="event_registrations"),
     # path("api/events/poster/<int:event_id>/", views.get_event_poster, name="event_poster"),
 
     # Home route (API route for events)

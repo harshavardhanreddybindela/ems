@@ -17,7 +17,7 @@ function Home() {
           setMessage("No upcoming events at the moment.");
         }
 
-        const registrationsResponse = await axios.get("http://localhost:8000/api/event-registrations/", {
+        const registrationsResponse = await axios.get("http://localhost:8000/api/registrations/", {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("access_token")}`,
           },
