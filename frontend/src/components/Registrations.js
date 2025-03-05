@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { Link } from "react-router-dom";
+import Navbar from "../components/Navbar";
 
 function RegisteredEvents() {
     const [registrations, setRegistrations] = useState([]);
@@ -39,84 +39,60 @@ function RegisteredEvents() {
     };
 
     return (
-        <div>
-            {/* Navbar */}
-            <nav className="navbar navbar-expand-lg navbar-light bg-light">
-                <div className="container">
-                    <Link className="navbar-brand" to="/">Event Management</Link>
-                    <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                        <span className="navbar-toggler-icon"></span>
-                    </button>
-                    <div className="collapse navbar-collapse" id="navbarNav">
-                        <ul className="navbar-nav">
-                            <li className="nav-item">
-                                <Link className="nav-link" to="/">Home</Link>
-                            </li>
-                            <li className="nav-item">
-                                <Link className="nav-link" to="/registrations">My Registrations</Link>
-                            </li>
-                            <li className="nav-item">
-                                <Link className="nav-link active" to="/profile">Profile</Link>
-                            </li>
-                            <li className="nav-item">
-                                <Link className="nav-link" to="/about">About Us</Link>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-            </nav>
+        <div className="min-h-screen bg-gray-100">
+            {/* Reusable Navbar */}
+            <Navbar />
 
-            {/* Registered Events Content */}
-            <div className="container mt-4">
-                <h1>Welcome, User!</h1>
-                <p>Below is your event registration information.</p>
+            <div className="container mx-auto p-6">
+                <h1 className="text-3xl font-semibold text-gray-800 text-center">Your Registered Events</h1>
+                {message && <p className="text-center text-red-500 mt-2">{message}</p>}
 
-                <h2>Your Registered Events</h2>
-                {message && <div className="alert alert-info">{message}</div>}
                 {registrations.length > 0 ? (
-                    <table className="table table-bordered">
-                        <thead>
-                            <tr>
-                                <th>Event Name</th>
-                                <th>Date</th>
-                                <th>Description</th>
-                                <th>Participants Limit</th>
-                                <th>Poster</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {registrations.map((registration) => (
-                                <tr key={registration.event.event_id}>
-                                    <td>{registration.event.name}</td>
-                                    <td>{registration.event.datetime}</td>
-                                    <td>{registration.event.description}</td>
-                                    <td>{registration.event.participant_limit}</td>
-                                    <td>
-                                        {registration.event.poster ? (
-                                            <img
-                                                src={registration.event.poster}
-                                                alt={`${registration.event.name} poster`}
-                                                width="100"
-                                            />
-                                        ) : (
-                                            "No Poster"
-                                        )}
-                                    </td>
-                                    <td>
-                                        <button
-                                            className="btn btn-danger btn-sm"
-                                            onClick={() => handleUnregister(registration.event.event_id)}
-                                        >
-                                            Unregister
-                                        </button>
-                                    </td>
+                    <div className="table-container mt-6">
+                        <table className="table-style w-full">
+                            <thead>
+                                <tr className="table-header">
+                                    <th className="p-4">Event Name</th>
+                                    <th className="p-4">Date</th>
+                                    <th className="p-4">Description</th>
+                                    <th className="p-4">Participants Limit</th>
+                                    <th className="p-4">Poster</th>
+                                    <th className="p-4">Action</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                {registrations.map((registration) => (
+                                    <tr key={registration.event.event_id} className="table-row">
+                                        <td className="p-4">{registration.event.name}</td>
+                                        <td className="p-4">{registration.event.datetime}</td>
+                                        <td className="p-4">{registration.event.description}</td>
+                                        <td className="p-4">{registration.event.participant_limit}</td>
+                                        <td className="p-4">
+                                            {registration.event.poster ? (
+                                                <img
+                                                    src={registration.event.poster}
+                                                    alt={`${registration.event.name} poster`}
+                                                    className="w-24 h-16 object-cover rounded-md"
+                                                />
+                                            ) : (
+                                                "No Poster"
+                                            )}
+                                        </td>
+                                        <td className="p-4">
+                                            <button
+                                                className="btn-danger"
+                                                onClick={() => handleUnregister(registration.event.event_id)}
+                                            >
+                                                Unregister
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                 ) : (
-                    <p>You have not registered for any events yet.</p>
+                    <p className="text-gray-500 text-center mt-4">You have not registered for any events yet.</p>
                 )}
             </div>
         </div>

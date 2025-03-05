@@ -1,2 +1,8 @@
 EventManagementSystem/__pycache__/*
 node_modules/*
+users/__pycache__/*
+/users/migrations/__pycache__/*
+/users/migrations/*
+*.pyc
+/users/templatetags/__pycache__/*
+/users/templatetags/*

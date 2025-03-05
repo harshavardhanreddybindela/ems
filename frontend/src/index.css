@@ -1,13 +1,29 @@
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 🎨 Global Styling for Tables */
+.table-container {
+  @apply w-full overflow-x-auto;
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+.table-style {
+  @apply min-w-full bg-white shadow-md rounded-lg overflow-hidden;
+}
+
+.table-header {
+  @apply bg-gray-100 text-gray-700 text-left font-semibold;
+}
+
+.table-row {
+  @apply border-b hover:bg-gray-50;
+}
+
+/* 🟢 Buttons */
+.btn-primary {
+  @apply bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition;
+}
+
+.btn-danger {
+  @apply bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition;
 }
