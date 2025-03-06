@@ -9,10 +9,18 @@ function RegisteredEvents() {
     useEffect(() => {
         const fetchRegistrations = async () => {
             try {
-                const response = await axios.get("http://localhost:8000/api/registered-events/", {
-                    headers: { Authorization: `Bearer ${localStorage.getItem("access_token")}` },
+                const token = localStorage.getItem("access_token");
+                if (!token) {
+                    setMessage("You must be logged in to view registered events.");
+                    return;
+                }
+
+                const response = await axios.get("http://localhost:8000/api/registrations/", {
+                    headers: { Authorization: `Bearer ${token}` },
                 });
-                setRegistrations(response.data);
+
+                console.log("API Response:", response.data); // Debugging log
+                setRegistrations(response.data.registrations || response.data);
             } catch (error) {
                 console.error("Error fetching registrations:", error);
                 setMessage("Failed to load registered events.");
@@ -22,15 +30,16 @@ function RegisteredEvents() {
         fetchRegistrations();
     }, []);
 
-    const handleUnregister = async (eventId) => {
+    const handleUnregister = async (event_id) => {
         try {
-            await axios.post(
-                `http://localhost:8000/api/unregister-event/${eventId}/`,
-                {},
-                { headers: { Authorization: `Bearer ${localStorage.getItem("access_token")}` } }
-            );
+            const token = localStorage.getItem("access_token");
+            await axios.delete(`http://localhost:8000/api/unregister/${event_id}/`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
 
-            setRegistrations(registrations.filter((reg) => reg.event.event_id !== eventId));
+            setRegistrations((prevRegistrations) =>
+                prevRegistrations.filter((reg) => (reg.event ? reg.event.event_id !== event_id : reg.event_id !== event_id))
+            );
             setMessage("Successfully unregistered from the event.");
         } catch (error) {
             console.error("Error unregistering:", error);
@@ -40,7 +49,6 @@ function RegisteredEvents() {
 
     return (
         <div className="min-h-screen bg-gray-100">
-            {/* Reusable Navbar */}
             <Navbar />
 
             <div className="container mx-auto p-6">
@@ -61,33 +69,36 @@ function RegisteredEvents() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {registrations.map((registration) => (
-                                    <tr key={registration.event.event_id} className="table-row">
-                                        <td className="p-4">{registration.event.name}</td>
-                                        <td className="p-4">{registration.event.datetime}</td>
-                                        <td className="p-4">{registration.event.description}</td>
-                                        <td className="p-4">{registration.event.participant_limit}</td>
-                                        <td className="p-4">
-                                            {registration.event.poster ? (
-                                                <img
-                                                    src={registration.event.poster}
-                                                    alt={`${registration.event.name} poster`}
-                                                    className="w-24 h-16 object-cover rounded-md"
-                                                />
-                                            ) : (
-                                                "No Poster"
-                                            )}
-                                        </td>
-                                        <td className="p-4">
-                                            <button
-                                                className="btn-danger"
-                                                onClick={() => handleUnregister(registration.event.event_id)}
-                                            >
-                                                Unregister
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
+                                {registrations.map((registration) => {
+                                    const event = registration.event || registration;
+                                    return (
+                                        <tr key={event.event_id} className="table-row">
+                                            <td className="p-4">{event.name}</td>
+                                            <td className="p-4">{event.datetime}</td>
+                                            <td className="p-4">{event.description}</td>
+                                            <td className="p-4">{event.participant_limit}</td>
+                                            <td className="p-4">
+                                                {event.poster ? (
+                                                    <img
+                                                        src={event.poster}
+                                                        alt={`${event.name} poster`}
+                                                        className="w-24 h-16 object-cover rounded-md"
+                                                    />
+                                                ) : (
+                                                    "No Poster"
+                                                )}
+                                            </td>
+                                            <td className="p-4">
+                                                <button
+                                                    className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition"
+                                                    onClick={() => handleUnregister(event.event_id)}
+                                                >
+                                                    Unregister
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
                         </table>
                     </div>

@@ -7,6 +7,9 @@ import Profile from "./components/Profile";
 import About from "./components/About";
 import Logout from "./components/Logout";
 import Signup from "./components/Signup";
+import Admin from "./components/Admin";
+import AddEvent from "./components/AddEvent";
+import UpdateEvent from "./components/UpdateEvent";
 function App() {
   return (
     <Router>
@@ -17,6 +20,9 @@ function App() {
         <Route path="/registrations" element={<Registrations />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/about" element={<About />} />
+        <Route path="/admin" element={<Admin />} />
+        <Route path="admin/add_event" element = {<AddEvent/>}/>
+        <Route path="admin/update_event" element = {<UpdateEvent/>}/>
         <Route path="/logout" element={<Logout />} />
       </Routes>
     </Router>

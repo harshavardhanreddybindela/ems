@@ -1,3 +1,4 @@
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import authenticate, get_user_model
 from django.contrib.auth import login as auth_login, logout as auth_logout
@@ -79,6 +80,13 @@ def jwt_login(request):
 
     return Response({'error': 'Invalid email or password'}, status=status.HTTP_401_UNAUTHORIZED)
 
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def check_staff_status(request):
+    """
+    Checks if the authenticated user is a staff member.
+    """
+    return Response({"is_staff": request.user.is_staff}, status=status.HTTP_200_OK)
 
 @api_view(['POST'])
 def jwt_logout(request):
@@ -172,3 +180,77 @@ def event_registrations(request):
             'description': registration.event.description
         })
     return Response({"registrations": registered_events}, status=status.HTTP_200_OK)
+
+from rest_framework.parsers import MultiPartParser, FormParser
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def add_event(request):
+    """
+    Allows staff users to create a new event.
+    """
+    if not request.user.is_staff:
+        return Response({"error": "Only staff members can add events."}, status=status.HTTP_403_FORBIDDEN)
+
+    # Extract event data from request
+    name = request.data.get("name")
+    datetime = request.data.get("datetime")
+    description = request.data.get("description")
+    participant_limit = request.data.get("participant_limit")
+    poster = request.FILES.get("poster")  # Handle file upload
+
+    # Validate required fields
+    if not name or not datetime or not description:
+        return Response({"error": "Please provide all required fields."}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        # Create the event
+        event = Event.objects.create(
+            name=name,
+            datetime=datetime,
+            description=description,
+            participant_limit=int(participant_limit) if participant_limit else None,
+            poster=poster,
+        )
+        print(event)
+        return Response({"message": "Event created successfully!", "event_id": event.event_id}, status=status.HTTP_201_CREATED)
+    except Exception as e:
+        print(e)
+        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def delete_event(request, event_id):
+    """
+    Allows staff users to delete an event.
+    """
+    if not request.user.is_staff:
+        return Response({"error": "Only staff members can delete events."}, status=status.HTTP_403_FORBIDDEN)
+
+    event = get_object_or_404(Event, event_id=event_id)
+    event.delete()
+    return Response({"message": "Event deleted successfully!"}, status=status.HTTP_200_OK)
+
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+def update_event(request, event_id):
+    """
+    Allows staff users to update an event's details.
+    """
+    if not request.user.is_staff:
+        return Response({"error": "Only staff members can update events."}, status=status.HTTP_403_FORBIDDEN)
+
+    event = get_object_or_404(Event, event_id=event_id)
+
+    # Extract event data from request
+    event.name = request.data.get("name", event.name)
+    event.datetime = request.data.get("datetime", event.datetime)
+    event.description = request.data.get("description", event.description)
+    event.participant_limit = request.data.get("participant_limit", event.participant_limit)
+    
+    # Handle poster update
+    if "poster" in request.FILES:
+        event.poster = request.FILES["poster"]
+
+    event.save()
+    return Response({"message": "Event updated successfully!"}, status=status.HTTP_200_OK)
