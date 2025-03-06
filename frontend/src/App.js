@@ -22,7 +22,7 @@ function App() {
         <Route path="/about" element={<About />} />
         <Route path="/admin" element={<Admin />} />
         <Route path="admin/add_event" element = {<AddEvent/>}/>
-        <Route path="admin/update_event" element = {<UpdateEvent/>}/>
+        <Route path="admin/update_event/:eventId" element={<UpdateEvent />} />
         <Route path="/logout" element={<Logout />} />
       </Routes>
     </Router>

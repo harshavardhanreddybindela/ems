@@ -3,7 +3,7 @@ import axios from "axios";
 import { useParams, useNavigate } from "react-router-dom";
 
 function UpdateEvent() {
-    const { eventId } = useParams();
+    const { event_id } = useParams();
     const navigate = useNavigate();
     const [formData, setFormData] = useState({
         name: "",
@@ -13,11 +13,11 @@ function UpdateEvent() {
         poster: null,
     });
     const [message, setMessage] = useState("");
-    console.log("Event ID from URL:", eventId);
+    console.log("Event ID from URL:", event_id);
     useEffect(() => {
         const fetchEvent = async () => {
             try {
-                const response = await axios.get(`http://localhost:8000/api/events/${eventId}/`);
+                const response = await axios.get(`api/admin/update/${event_id}/`);
                 setFormData({
                     name: response.data.name,
                     datetime: response.data.datetime,
@@ -30,7 +30,7 @@ function UpdateEvent() {
             }
         };
         fetchEvent();
-    }, [eventId]);
+    }, [event_id]);
 
     const handleChange = (e) => {
         if (e.target.name === "poster") {
@@ -57,7 +57,7 @@ function UpdateEvent() {
         if (formData.poster) form.append("poster", formData.poster);
 
         try {
-            await axios.put(`http://localhost:8000/api/update-event/${eventId}/`, form, {
+            await axios.put(`http://localhost:8000/api/update-event/${event_id}/`, form, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                     "Content-Type": "multipart/form-data",
