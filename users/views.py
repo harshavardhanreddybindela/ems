@@ -116,7 +116,11 @@ def event_detail(request, event_id):
     """
     Retrieves a specific event by ID.
     """
-    event = get_object_or_404(Event, event_id=event_id)
+    try:
+        event = get_object_or_404(Event, event_id=event_id)
+    except Event.DoesNotExist:
+        return Response({"detail": "Event not found."}, status=status.HTTP_404_NOT_FOUND)
+    
     event_data = {
         'event_id': event.event_id,
         'name': event.name,
@@ -227,7 +231,7 @@ def delete_event(request, event_id):
     if not request.user.is_staff:
         return Response({"error": "Only staff members can delete events."}, status=status.HTTP_403_FORBIDDEN)
 
-    event = get_object_or_404(Event, event_id=event_id)
+    event = get_object_or_404(Event, event_id=event_id) 
     event.delete()
     return Response({"message": "Event deleted successfully!"}, status=status.HTTP_200_OK)
 

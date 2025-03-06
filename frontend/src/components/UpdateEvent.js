@@ -13,11 +13,11 @@ function UpdateEvent() {
         poster: null,
     });
     const [message, setMessage] = useState("");
-
+    console.log("Event ID from URL:", eventId);
     useEffect(() => {
         const fetchEvent = async () => {
             try {
-                const response = await axios.get(`http://localhost:8000/api/event-detail/${eventId}/`);
+                const response = await axios.get(`http://localhost:8000/api/events/${eventId}/`);
                 setFormData({
                     name: response.data.name,
                     datetime: response.data.datetime,
