@@ -13,7 +13,6 @@ function Home() {
       try {
         // Fetch events
         const eventsResponse = await axios.get("http://localhost:8000/api/events/");
-        console.log(eventsResponse);
         setEvents(eventsResponse.data.events);
 
         // Fetch user registrations
@@ -36,6 +35,13 @@ function Home() {
     fetchData();
   }, []);
 
+  // Check if the event has expired
+  const isEventExpired = (eventDatetime) => {
+    const eventDate = new Date(eventDatetime);
+    const currentDate = new Date();
+    return eventDate < currentDate;  // If the event date is in the past
+  };
+
   // Handle event registration
   const handleRegister = async (event_id) => {
     try {
@@ -49,7 +55,6 @@ function Home() {
           },
         }
       );
-      console.log("Reponse for the register-event"+ response.event_id);
 
       setMessage(response.data.message || "Successfully registered!");
 
@@ -75,7 +80,6 @@ function Home() {
       // Update state to remove the unregistered event
       setMyRegistrations(myRegistrations.filter(event => event.event_id !== event_id));
     } catch (error) {
-      console.log(error);
       setMessage(error.response?.data?.error || "Failed to unregister.");
     }
   };
@@ -106,22 +110,31 @@ function Home() {
                 events.map((event) => (
                   <div key={event.event_id} className="bg-white shadow-lg p-6 rounded-lg">
                     {event.poster && (
-                <img
-                src={`http://localhost:8000${event.poster}`} // Ensure full URL
-                alt="Event Poster"
-                className="w-64 h-40 object-cover rounded-lg mb-4"
-            />
-            )}
+                      <img 
+                        src={`http://localhost:8000/media/${event.poster}`} 
+                        alt="Event Poster" 
+                        className="w-full h-48 object-cover rounded mt-4"
+                      />
+                    )}
                     <h4 className="text-xl font-bold text-gray-800">{event.name}</h4>
                     <p className="text-gray-600">{event.description}</p>
                     <p className="text-gray-500 mt-2">📅 {event.datetime}</p>
                     <p className="text-gray-500">👥 Limit: {event.participant_limit}</p>
-                    <button
-                      className="mt-3 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition"
-                      onClick={() => handleRegister(event.event_id)}
-                    >
-                      Register
-                    </button>
+
+                    {/* Check if event is expired and display message */}
+                    {isEventExpired(event.datetime) && (
+                      <p className="text-red-600 mt-3">This event has expired.</p>
+                    )}
+
+                    {/* Display Register button if event is not expired */}
+                    {!isEventExpired(event.datetime) && (
+                      <button
+                        className="mt-3 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition"
+                        onClick={() => handleRegister(event.event_id)}
+                      >
+                        Register
+                      </button>
+                    )}
                   </div>
                 ))
               ) : (
@@ -135,7 +148,6 @@ function Home() {
               {myRegistrations.length > 0 ? (
                 myRegistrations.map((registration) => (
                   <div key={registration.event_id} className="bg-white shadow-lg p-6 rounded-lg">
-
                     <h4 className="text-xl font-bold text-gray-800">{registration.name}</h4>
                     <p className="text-gray-600">{registration.description}</p>
                     <p className="text-gray-500 mt-2">📅 {registration.datetime}</p>

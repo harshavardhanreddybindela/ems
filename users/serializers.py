@@ -9,7 +9,9 @@ class CustomUserSerializer(serializers.ModelSerializer):
         fields = ['id', 'email', 'is_active', 'is_staff']
 
 class EventSerializer(serializers.ModelSerializer):
+    poster = serializers.ImageField(required=False)
     class Meta:
+        
         model = Event
         fields = '__all__' 
         #fields = ['event_id', 'name', 'datetime', 'description', 'participant_limit', 'poster']

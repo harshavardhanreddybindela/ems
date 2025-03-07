@@ -111,6 +111,13 @@ function Admin() {
                         {events.length > 0 ? (
                             events.map((event) => (
                                 <div key={event.event_id} className="bg-white shadow-md p-4 rounded-lg mb-4">
+                                    {event.poster && (
+                            <img 
+                            src={`http://localhost:8000/media/${event.poster}`} 
+                            alt="Event Poster" 
+                            className="w-full h-48 object-cover rounded mt-4"
+                        />
+                        )}
                                     <h4 className="text-lg font-semibold">{event.name}</h4>
                                     <p><strong>Date:</strong> {event.datetime}</p>
                                     <p><strong>Description:</strong> {event.description}</p>

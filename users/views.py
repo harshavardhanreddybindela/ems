@@ -1,3 +1,4 @@
+import os
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import authenticate, get_user_model
@@ -8,6 +9,8 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
+from django.core.files.storage import default_storage
+from django.core.files.base import ContentFile
 
 from users.serializers import EventSerializer
 from .models import Event, Registration
@@ -210,16 +213,32 @@ def add_event(request):
         return Response({"error": "Please provide all required fields."}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
-        # Create the event
+        # Create the event (without the poster to get event_id)
         event = Event.objects.create(
             name=name,
             datetime=datetime,
             description=description,
             participant_limit=int(participant_limit) if participant_limit else None,
-            poster=poster,
         )
-        print(event)
-        return Response({"message": "Event created successfully!", "event_id": event.event_id}, status=status.HTTP_201_CREATED)
+
+        # Save the poster if provided
+        if poster:
+            ext = os.path.splitext(poster.name)[1]  # Get the file extension
+            new_filename = f"event_{event.event_id}_{name.replace(' ', '_')}{ext}"
+            file_path = os.path.join("event_posters/", new_filename)
+
+            # Save the file to the media storage
+            saved_path = default_storage.save(file_path, ContentFile(poster.read()))
+
+            # Update event poster field
+            event.poster.name = saved_path
+            event.save()
+
+        # Serialize event data
+        serializer = EventSerializer(event)
+
+        return Response({"message": "Event created successfully!", "event": serializer.data}, status=status.HTTP_201_CREATED)
+
     except Exception as e:
         print(e)
         return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)

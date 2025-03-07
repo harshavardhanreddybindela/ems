@@ -1,6 +1,8 @@
 from django.urls import path
 from rest_framework_simplejwt.views import TokenRefreshView
 from . import views
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
     # Authentication routes (JWT-based only)
@@ -10,12 +12,6 @@ urlpatterns = [
     path("api/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),  # Refresh token
     path("api/check-staff/", views.check_staff_status, name="check-staff"),
 
-    # Protected API route (requires JWT authentication)
-    #path("api/protected/", views.protected_view, name="protected_view"),
-
-    # User dashboard and profile (use API to manage profile)
-    # path("api/profile/", views.profile_view, name="profile"),
-    # path("api/about/", views.about_view, name="about"),
 
     # Event management routes
     path("api/events/", views.event_list, name="events"),
@@ -26,8 +22,9 @@ urlpatterns = [
     path("api/register-event/<int:event_id>/", views.register_event, name="register_event"),
     path("api/unregister/<int:event_id>/", views.unregister_event, name="unregister_event"),
     path("api/registrations/", views.event_registrations, name="event_registrations"),
-    # path("api/events/poster/<int:event_id>/", views.get_event_poster, name="event_poster"),
 
-    # Home route (API route for events)
-    #path("api/home/", views.home, name="home"),
+
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
