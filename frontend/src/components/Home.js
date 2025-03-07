@@ -13,6 +13,7 @@ function Home() {
       try {
         // Fetch events
         const eventsResponse = await axios.get("http://localhost:8000/api/events/");
+        console.log(eventsResponse);
         setEvents(eventsResponse.data.events);
 
         // Fetch user registrations
@@ -104,6 +105,13 @@ function Home() {
               {events.length > 0 ? (
                 events.map((event) => (
                   <div key={event.event_id} className="bg-white shadow-lg p-6 rounded-lg">
+                    {event.poster && (
+                <img
+                src={`http://localhost:8000${event.poster}`} // Ensure full URL
+                alt="Event Poster"
+                className="w-64 h-40 object-cover rounded-lg mb-4"
+            />
+            )}
                     <h4 className="text-xl font-bold text-gray-800">{event.name}</h4>
                     <p className="text-gray-600">{event.description}</p>
                     <p className="text-gray-500 mt-2">📅 {event.datetime}</p>
@@ -127,6 +135,7 @@ function Home() {
               {myRegistrations.length > 0 ? (
                 myRegistrations.map((registration) => (
                   <div key={registration.event_id} className="bg-white shadow-lg p-6 rounded-lg">
+
                     <h4 className="text-xl font-bold text-gray-800">{registration.name}</h4>
                     <p className="text-gray-600">{registration.description}</p>
                     <p className="text-gray-500 mt-2">📅 {registration.datetime}</p>

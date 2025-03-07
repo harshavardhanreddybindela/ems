@@ -8,6 +8,8 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
+
+from users.serializers import EventSerializer
 from .models import Event, Registration
 from .forms import EventForm
 
@@ -235,16 +237,20 @@ def delete_event(request, event_id):
     event.delete()
     return Response({"message": "Event deleted successfully!"}, status=status.HTTP_200_OK)
 
-@api_view(['PUT'])
+@api_view(['GET', 'PUT'])
 @permission_classes([IsAuthenticated])
 def update_event(request, event_id):
     """
-    Allows staff users to update an event's details.
+    Handles retrieving event details (GET) and updating event details (PUT) by staff users.
     """
+    event = get_object_or_404(Event, event_id=event_id)
+
+    if request.method == "GET":
+        serializer = EventSerializer(event)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
     if not request.user.is_staff:
         return Response({"error": "Only staff members can update events."}, status=status.HTTP_403_FORBIDDEN)
-
-    event = get_object_or_404(Event, event_id=event_id)
 
     # Extract event data from request
     event.name = request.data.get("name", event.name)
@@ -258,3 +264,5 @@ def update_event(request, event_id):
 
     event.save()
     return Response({"message": "Event updated successfully!"}, status=status.HTTP_200_OK)
+    
+    

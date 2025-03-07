@@ -3,7 +3,7 @@ import axios from "axios";
 import { useParams, useNavigate } from "react-router-dom";
 
 function UpdateEvent() {
-    const { event_id } = useParams();
+    const { eventId } = useParams();
     const navigate = useNavigate();
     const [formData, setFormData] = useState({
         name: "",
@@ -12,25 +12,42 @@ function UpdateEvent() {
         participant_limit: "",
         poster: null,
     });
+    const [existingPoster, setExistingPoster] = useState(""); // Store existing poster URL
     const [message, setMessage] = useState("");
-    console.log("Event ID from URL:", event_id);
+
     useEffect(() => {
         const fetchEvent = async () => {
+            const token = localStorage.getItem("access_token");
+
+            if (!token) {
+                setMessage("You must be logged in as a staff member.");
+                return;
+            }
+
             try {
-                const response = await axios.get(`api/admin/update/${event_id}/`);
+                const response = await axios.get(`http://localhost:8000/api/admin/update/${eventId}/`, {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+
                 setFormData({
                     name: response.data.name,
-                    datetime: response.data.datetime,
+                    datetime: response.data.datetime ? response.data.datetime.slice(0, 16) : "",
                     description: response.data.description,
                     participant_limit: response.data.participant_limit,
-                    poster: null, // Poster is optional
+                    poster: null,
                 });
+
+                if (response.data.poster) {
+                    setExistingPoster(response.data.poster);
+                }
             } catch (error) {
                 setMessage("Failed to fetch event details.");
             }
         };
         fetchEvent();
-    }, [event_id]);
+    }, [eventId]);
 
     const handleChange = (e) => {
         if (e.target.name === "poster") {
@@ -57,7 +74,7 @@ function UpdateEvent() {
         if (formData.poster) form.append("poster", formData.poster);
 
         try {
-            await axios.put(`http://localhost:8000/api/update-event/${event_id}/`, form, {
+            await axios.put(`http://localhost:8000/api/admin/update/${eventId}/`, form, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                     "Content-Type": "multipart/form-data",
@@ -65,7 +82,7 @@ function UpdateEvent() {
             });
 
             setMessage("Event updated successfully!");
-            navigate("/events"); // Redirect back to event list
+            setTimeout(() => navigate("/admin"), 1500); // Redirect to events page after success
         } catch (error) {
             setMessage(error.response?.data?.error || "Failed to update event.");
         }
@@ -75,55 +92,66 @@ function UpdateEvent() {
         <div className="container mx-auto p-6">
             <h2 className="text-3xl font-semibold text-center">Update Event</h2>
             {message && <p className="text-center text-red-500 mt-2">{message}</p>}
-
             <form onSubmit={handleSubmit} className="bg-white shadow-lg rounded-lg p-6">
-                <label className="block text-gray-700">Event Name:</label>
-                <input
-                    type="text"
-                    name="name"
-                    className="w-full p-2 border rounded-md"
-                    value={formData.name}
-                    onChange={handleChange}
-                    required
-                />
+                <div className="mb-4">
+                    <label className="block text-gray-700">Event Name</label>
+                    <input
+                        type="text"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleChange}
+                        className="w-full p-2 border rounded"
+                        required
+                    />
+                </div>
 
-                <label className="block text-gray-700 mt-3">Date & Time:</label>
-                <input
-                    type="datetime-local"
-                    name="datetime"
-                    className="w-full p-2 border rounded-md"
-                    value={formData.datetime}
-                    onChange={handleChange}
-                    required
-                />
+                <div className="mb-4">
+                    <label className="block text-gray-700">Date & Time</label>
+                    <input
+                        type="datetime-local"
+                        name="datetime"
+                        value={formData.datetime}
+                        onChange={handleChange}
+                        className="w-full p-2 border rounded"
+                        required
+                    />
+                </div>
 
-                <label className="block text-gray-700 mt-3">Description:</label>
-                <textarea
-                    name="description"
-                    className="w-full p-2 border rounded-md"
-                    value={formData.description}
-                    onChange={handleChange}
-                    required
-                ></textarea>
+                <div className="mb-4">
+                    <label className="block text-gray-700">Description</label>
+                    <textarea
+                        name="description"
+                        value={formData.description}
+                        onChange={handleChange}
+                        className="w-full p-2 border rounded"
+                        required
+                    ></textarea>
+                </div>
 
-                <label className="block text-gray-700 mt-3">Participant Limit:</label>
-                <input
-                    type="number"
-                    name="participant_limit"
-                    className="w-full p-2 border rounded-md"
-                    value={formData.participant_limit}
-                    onChange={handleChange}
-                />
+                <div className="mb-4">
+                    <label className="block text-gray-700">Participant Limit</label>
+                    <input
+                        type="number"
+                        name="participant_limit"
+                        value={formData.participant_limit}
+                        onChange={handleChange}
+                        className="w-full p-2 border rounded"
+                    />
+                </div>
 
-                <label className="block text-gray-700 mt-3">Upload New Poster (Optional):</label>
-                <input
-                    type="file"
-                    name="poster"
-                    className="w-full p-2 border rounded-md"
-                    onChange={handleChange}
-                />
+                {existingPoster && (
+                    <div className="mb-4">
+                        <label className="block text-gray-700">Current Poster</label>
+                        <img src={existingPoster} alt="Event Poster" className="w-32 h-32 object-cover rounded" />
+                    </div>
+                )}
 
-                <button type="submit" className="mt-4 w-full bg-blue-500 text-white p-2 rounded-md hover:bg-blue-600">
+                <div className="mb-4">
+                    <label className="block text-gray-700">Upload New Poster</label>
+                    <input type="file" name="poster" onChange={handleChange} className="w-full p-2 border rounded" />
+                </div>
+
+                <button type="submit" className="w-full bg-blue-500 text-white p-2 rounded">
                     Update Event
                 </button>
             </form>
