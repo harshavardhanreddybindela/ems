@@ -234,6 +234,12 @@ def add_event(request):
             event.poster.name = saved_path
             event.save()
 
+        else:
+        # If no poster provided, use the default poster
+            default_poster_path = "event_posters/noimage.jpeg"  # Path to your default image
+            event.poster.name = default_poster_path
+            event.save()
+
         # Serialize event data
         serializer = EventSerializer(event)
 

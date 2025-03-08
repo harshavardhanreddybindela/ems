@@ -39,6 +39,7 @@ function Home() {
   const isEventExpired = (eventDatetime) => {
     const eventDate = new Date(eventDatetime);
     const currentDate = new Date();
+    console.log(currentDate + eventDate)
     return eventDate < currentDate;  // If the event date is in the past
   };
 
