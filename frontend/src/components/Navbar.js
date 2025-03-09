@@ -12,6 +12,9 @@ function Navbar() {
         setIsLoggedIn(!!token); // Convert token existence to boolean (true/false)
 
         if (token) {
+            navigate("/home"); // Redirect to home if logged in
+        }
+        if (token) {
             // Fetch staff status if user is logged in
             axios.get("http://localhost:8000/api/check-staff/", {
                 headers: { Authorization: `Bearer ${token}` },
@@ -23,7 +26,7 @@ function Navbar() {
                 console.error("Error fetching staff status:", error);
             });
         }
-    }, []);
+    }, [navigate]);
 
     return (
         <nav className="bg-blue-600 p-4 shadow-md text-white">
