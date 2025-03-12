@@ -1,5 +1,9 @@
-import os
+from calendar import Calendar
+from email.message import EmailMessage
+import os, pytz
+from tempfile import NamedTemporaryFile
 from django.http import JsonResponse
+from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import authenticate, get_user_model
 from django.contrib.auth import login as auth_login, logout as auth_logout
@@ -11,15 +15,122 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
-
+from django.core.mail import send_mail, EmailMultiAlternatives
+from EventManagementSystem import settings
 from users.serializers import EventSerializer
 from .models import Event, Registration
 from .forms import EventForm
+from ics import Calendar, Event as IcsEvent
 
 User = get_user_model()
 
 
 ### JWT AUTHENTICATION VIEWS ###
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def register_event(request, event_id):
+    user = request.user
+    event = Event.objects.get(pk=event_id)
+
+    if Registration.objects.filter(user=user, event=event).exists():
+        return JsonResponse({"error": "You are already registered for this event."}, status=400)
+
+    # Create the registration
+    Registration.objects.create(user=user, event=event)
+
+    # Create an ICS calendar event
+    cal = Calendar()
+    ics_event = IcsEvent()
+    ics_event.name = event.name
+    ics_event.begin = event.datetime.astimezone(pytz.utc)  # Ensure UTC timezone
+    ics_event.duration = {"hours": 2}  # Modify if needed
+    ics_event.description = event.description
+    cal.events.add(ics_event)
+
+    # Convert calendar object to string
+    ics_content = str(cal)
+
+    # Email content
+    subject = f"Registration Confirmation for {event.name}"
+    message = f"""
+    Hello {user.email},
+
+    You have successfully registered for the event: {event.name}.
+
+    📅 Event Details:
+    Date: {event.datetime.strftime('%Y-%m-%d %H:%M:%S')}
+    Location: Online / In-person (Check event page)
+
+    Attached is the calendar event for your reference.
+
+    Thank you for registering!
+    Best regards,
+    Event Management Team
+    """
+
+   
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def register_event(request, event_id):
+    user = request.user
+    event = get_object_or_404(Event, pk=event_id)
+
+    # Check if event is already full
+    if event.participant_limit is not None and event.participant_limit <= 0:
+        return JsonResponse({"error": "Registration closed. This event is full."}, status=400)
+
+    if Registration.objects.filter(user=user, event=event).exists():
+        return JsonResponse({"error": "You are already registered for this event."}, status=400)
+
+    # Use a transaction to prevent race conditions
+    with transaction.atomic():
+        Registration.objects.create(user=user, event=event)
+        
+        # Decrease participant limit
+        if event.participant_limit is not None:
+            event.participant_limit -= 1
+            event.save()
+
+    # Create ICS calendar event
+    cal = Calendar()
+    ics_event = IcsEvent()
+    ics_event.name = event.name
+    ics_event.begin = event.datetime.astimezone(pytz.utc)  # Ensure UTC timezone
+    ics_event.duration = {"hours": 2}
+    ics_event.description = event.description
+    cal.events.add(ics_event)
+
+    # Convert calendar object to string
+    ics_content = str(cal)
+
+    # Email content
+    subject = f"Registration Confirmation for {event.name}"
+    message = f"""
+    Hello {user.email},
+
+    You have successfully registered for the event: {event.name}.
+
+    📅 Event Details:
+    Date: {event.datetime.strftime('%Y-%m-%d %H:%M:%S')}
+    Location: Online / In-person (Check event page)
+    Description: {event.description}
+
+    Attached is the calendar event for your reference.
+
+    Thank you for registering!
+    Best regards,
+    Event Management Team
+    """
+
+    email = EmailMultiAlternatives(subject, message, settings.DEFAULT_FROM_EMAIL, [user.email])
+    email.attach("event.ics", ics_content, "text/calendar")
+
+    try:
+        email.send()
+    except Exception as e:
+        return JsonResponse({"error": f"Registration successful, but email failed: {str(e)}"}, status=500)
+
+    return JsonResponse({"message": "Successfully registered! A confirmation email with a calendar invite has been sent."}, status=201)
 
 @api_view(['GET', 'POST'])
 def signup(request):
@@ -136,26 +247,6 @@ def event_detail(request, event_id):
     }
     return Response(event_data, status=status.HTTP_200_OK)
 
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def register_event(request, event_id):
-    """
-    Registers the current user for the specified event.
-    """
-    event = get_object_or_404(Event, event_id=event_id)
-
-    if event.participant_limit and event.participant_limit <= 0:
-        return Response({"error": "No spots available for this event."}, status=status.HTTP_400_BAD_REQUEST)
-
-    registration, created = Registration.objects.get_or_create(user=request.user, event=event)
-
-    if created:
-        if event.participant_limit:
-            event.participant_limit -= 1
-            event.save()
-        return Response({"message": "Successfully registered for the event!"}, status=status.HTTP_201_CREATED)
-
-    return Response({"error": "You are already registered for this event."}, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated])
@@ -167,11 +258,12 @@ def unregister_event(request, event_id):
     registration.delete()
 
     event = get_object_or_404(Event, event_id=event_id)
-    if event.participant_limit:
+    if event.participant_limit is not None:
         event.participant_limit += 1
         event.save()
 
     return Response({"message": "Successfully unregistered from the event."}, status=status.HTTP_200_OK)
+
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -190,7 +282,6 @@ def event_registrations(request):
         })
     return Response({"registrations": registered_events}, status=status.HTTP_200_OK)
 
-from rest_framework.parsers import MultiPartParser, FormParser
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
