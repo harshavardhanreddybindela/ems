@@ -21,6 +21,7 @@ from users.serializers import EventSerializer
 from .models import Event, Registration
 from .forms import EventForm
 from ics import Calendar, Event as IcsEvent
+from django.contrib.auth.hashers import make_password
 
 User = get_user_model()
 
@@ -381,4 +382,35 @@ def update_event(request, event_id):
     event.save()
     return Response({"message": "Event updated successfully!"}, status=status.HTTP_200_OK)
     
-    
+@permission_classes([IsAuthenticated])
+@api_view(["GET", "POST"])
+def user_profile(request):
+    if request.method == 'GET':
+        # Return the user's profile details
+        user = request.user  # Assuming the user is authenticated
+        user_data = {
+            'email': user.email,
+            'name': user.name,
+        }
+        return JsonResponse(user_data)
+
+    elif request.method == 'POST':
+        # Update user details
+        user = request.user  # Assuming the user is authenticated
+        data = request.POST  # Get the form data
+
+        name = data.get('name')
+        email = data.get('email')
+        password = data.get('password')
+
+        # Update user details only if they are provided
+        if name:
+            user.name = name
+        if email:
+            user.email = email
+        if password:
+            user.password = make_password(password)  # Hash the password before saving
+
+        user.save()
+
+        return JsonResponse({'message': 'User details updated successfully'})

@@ -22,6 +22,7 @@ urlpatterns = [
     path("api/register-event/<int:event_id>/", views.register_event, name="register_event"),
     path("api/unregister/<int:event_id>/", views.unregister_event, name="unregister_event"),
     path("api/registrations/", views.event_registrations, name="event_registrations"),
+    path('api/profile/', views.user_profile, name='user_profile'),
 
 
 ]
