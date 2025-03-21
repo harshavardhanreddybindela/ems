@@ -1,73 +1,28 @@
-from calendar import Calendar
-from email.message import EmailMessage
 import os, pytz
-from tempfile import NamedTemporaryFile
 from django.http import JsonResponse
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import authenticate, get_user_model
-from django.contrib.auth import login as auth_login, logout as auth_logout
-from django.contrib import messages
+from django.core.files.storage import default_storage
+from django.core.files.base import ContentFile
+from django.core.mail import EmailMultiAlternatives
+from django.contrib.auth.hashers import make_password
+
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
-from django.core.files.storage import default_storage
-from django.core.files.base import ContentFile
-from django.core.mail import send_mail, EmailMultiAlternatives
+
 from EventManagementSystem import settings
 from users.serializers import EventSerializer
 from .models import Event, Registration
-from .forms import EventForm
+
 from ics import Calendar, Event as IcsEvent
-from django.contrib.auth.hashers import make_password
+from calendar import Calendar
+
 
 User = get_user_model()
-
-
-### JWT AUTHENTICATION VIEWS ###
-@api_view(["POST"])
-@permission_classes([IsAuthenticated])
-def register_event(request, event_id):
-    user = request.user
-    event = Event.objects.get(pk=event_id)
-
-    if Registration.objects.filter(user=user, event=event).exists():
-        return JsonResponse({"error": "You are already registered for this event."}, status=400)
-
-    # Create the registration
-    Registration.objects.create(user=user, event=event)
-
-    # Create an ICS calendar event
-    cal = Calendar()
-    ics_event = IcsEvent()
-    ics_event.name = event.name
-    ics_event.begin = event.datetime.astimezone(pytz.utc)  # Ensure UTC timezone
-    ics_event.duration = {"hours": 2}  # Modify if needed
-    ics_event.description = event.description
-    cal.events.add(ics_event)
-
-    # Convert calendar object to string
-    ics_content = str(cal)
-
-    # Email content
-    subject = f"Registration Confirmation for {event.name}"
-    message = f"""
-    Hello {user.email},
-
-    You have successfully registered for the event: {event.name}.
-
-    📅 Event Details:
-    Date: {event.datetime.strftime('%Y-%m-%d %H:%M:%S')}
-    Location: Online / In-person (Check event page)
-
-    Attached is the calendar event for your reference.
-
-    Thank you for registering!
-    Best regards,
-    Event Management Team
-    """
 
    
 @api_view(["POST"])
@@ -132,6 +87,7 @@ def register_event(request, event_id):
         return JsonResponse({"error": f"Registration successful, but email failed: {str(e)}"}, status=500)
 
     return JsonResponse({"message": "Successfully registered! A confirmation email with a calendar invite has been sent."}, status=201)
+
 
 @api_view(['GET', 'POST'])
 def signup(request):
