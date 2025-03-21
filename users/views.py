@@ -1,7 +1,7 @@
 import os, pytz
 from django.http import JsonResponse
 from django.db import transaction
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib.auth import authenticate, get_user_model
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
@@ -24,6 +24,63 @@ from calendar import Calendar
 
 User = get_user_model()
 
+<<<<<<< HEAD
+=======
+def create_event(request):
+    if request.method == 'POST':
+        form = EventForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            return redirect('event_list')  # Redirect to event list after successful event creation
+    else:
+        form = EventForm()
+    return render(request, 'create_event.html', {'form': form})
+
+
+### JWT AUTHENTICATION VIEWS ###
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def register_event(request, event_id):
+    user = request.user
+    event = Event.objects.get(pk=event_id)
+
+    if Registration.objects.filter(user=user, event=event).exists():
+        return JsonResponse({"error": "You are already registered for this event."}, status=400)
+
+    # Create the registration
+    Registration.objects.create(user=user, event=event)
+
+    # Create an ICS calendar event
+    cal = Calendar()
+    ics_event = IcsEvent()
+    ics_event.name = event.name
+    ics_event.begin = event.datetime.astimezone(pytz.utc)  # Ensure UTC timezone
+    ics_event.duration = {"hours": 2}  # Modify if needed
+    ics_event.description = event.description
+    cal.events.add(ics_event)
+
+    # Convert calendar object to string
+    ics_content = str(cal)
+
+    # Email content
+    subject = f"Registration Confirmation for {event.name}"
+    message = f"""
+    Hello {user.email},
+
+    You have successfully registered for the event: {event.name}.
+
+    📅 Event Details:
+    Date: {event.datetime.strftime('%Y-%m-%d %H:%M:%S')}
+    Location: Online / In-person (Check event page)
+
+    Attached is the calendar event for your reference.
+
+    Thank you for registering!
+    Best regards,
+    Event Management Team
+    """
+
+>>>>>>> 1d5686edf9afab6a19cf4ae5b581287096ec86a2
    
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
