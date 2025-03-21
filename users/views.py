@@ -4,7 +4,7 @@ import os, pytz
 from tempfile import NamedTemporaryFile
 from django.http import JsonResponse
 from django.db import transaction
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib.auth import authenticate, get_user_model
 from django.contrib.auth import login as auth_login, logout as auth_logout
 from django.contrib import messages
@@ -23,6 +23,16 @@ from .forms import EventForm
 from ics import Calendar, Event as IcsEvent
 
 User = get_user_model()
+
+def create_event(request):
+    if request.method == 'POST':
+        form = EventForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            return redirect('event_list')  # Redirect to event list after successful event creation
+    else:
+        form = EventForm()
+    return render(request, 'create_event.html', {'form': form})
 
 
 ### JWT AUTHENTICATION VIEWS ###
