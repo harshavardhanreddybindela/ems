@@ -12,4 +12,4 @@ RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 
 # Run the application with gunicorn
-CMD ["gunicorn", "your_project.wsgi:application", "--bind", "0.0.0.0:8000"]
+CMD ["gunicorn", "EventManagementSystem.wsgi:application", "--bind", "0.0.0.0:8000"]
